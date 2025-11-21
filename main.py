@@ -525,7 +525,7 @@ def transform_payload(
     # Strip unwanted fields last so we don't accidentally reintroduce them.
     return _remove_fields(data)
 
-FIELDS_TO_REMOVE = {"planning", "order_planning4", "order_planning3", "order_planning2"}
+FIELDS_TO_REMOVE = {"planning", "order_planning4", "order_planning3", "order_planning2", "driver_manager_profile"}
 
 
 def _remove_fields(obj: Any) -> Any:
