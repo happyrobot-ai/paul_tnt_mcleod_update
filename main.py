@@ -624,48 +624,12 @@ async def update_load_data(body: UpdateLoadDataRequest):
 
     # Fetch current order payload and transform with extracted times
     current = _fetch_order_data(order_id)
-    print(f"Fetched order data, keys: {list(current.keys()) if isinstance(current, dict) else 'Not a dict'}")
-    
-    # Log the FULL raw payload before transformation
-    current_json = json.dumps(current, indent=2)
-    print(f"=== RAW PAYLOAD FROM UPSTREAM (length: {len(current_json)} chars) ===")
-    print(current_json[:3000])  # First 3000 chars
-    if "SUEKEYS" in current_json:
-        print(f"⚠️  FOUND 'SUEKEYS' in raw payload - searching for its location...")
-        # Find all occurrences of SUEKEYS
-        import re
-        matches = list(re.finditer(r'"([^"]*)":\s*"SUEKEYS"', current_json))
-        for match in matches:
-            print(f"   Found in field: {match.group(1)}")
     
     data_cleaned = transform_payload(
         current,
         extracted_actual_arrival=body.extracted_arrival,
         extracted_actual_departure=body.extracted_departure,
     )
-    print(f"After transformation, data_cleaned keys: {list(data_cleaned.keys()) if isinstance(data_cleaned, dict) else 'Not a dict'}")
-    
-    # Log the FULL cleaned payload after transformation
-    cleaned_json = json.dumps(data_cleaned, indent=2)
-    print(f"=== CLEANED PAYLOAD AFTER TRANSFORMATION (length: {len(cleaned_json)} chars) ===")
-    print(cleaned_json[:3000])  # First 3000 chars
-    if "SUEKEYS" in cleaned_json:
-        print(f"❌ ERROR: 'SUEKEYS' STILL EXISTS in cleaned payload!")
-        # Find all occurrences
-        import re
-        matches = list(re.finditer(r'"([^"]*)":\s*"SUEKEYS"', cleaned_json))
-        for match in matches:
-            print(f"   Still in field: {match.group(1)}")
-    else:
-        print(f"✅ Confirmed: 'SUEKEYS' has been removed from payload")
-    
-    if "driver_manager_profile" in cleaned_json:
-        print(f"❌ ERROR: 'driver_manager_profile' field STILL EXISTS!")
-        # Show context around it
-        idx = cleaned_json.find("driver_manager_profile")
-        print(f"Context: {cleaned_json[max(0, idx-200):idx+200]}")
-    else:
-        print(f"✅ Confirmed: 'driver_manager_profile' field has been removed")
 
     base_url = os.getenv('GET_URL')
     token = os.getenv('TOKEN')
@@ -690,19 +654,6 @@ async def update_load_data(body: UpdateLoadDataRequest):
 
     timeout_seconds = float(os.getenv("REQUEST_TIMEOUT_SECONDS") or 15)
     update_method = (os.getenv("UPDATE_METHOD") or "PUT").strip().upper()
-
-    # Add debugging
-    print(f"Attempting {update_method} request to: {url_for_connect}")
-    print(f"Headers: {headers}")
-    print(f"Payload size: {len(str(data_cleaned))} characters")
-    
-    # Debug: Check if driver_manager_profile still exists in payload
-    payload_str = json.dumps(data_cleaned, indent=2)
-    if "driver_manager_profile" in payload_str:
-        print("WARNING: driver_manager_profile STILL EXISTS in payload!")
-        print(f"Payload snippet: {payload_str[:2000]}")
-    else:
-        print("Confirmed: driver_manager_profile has been removed from payload")
 
     try:
         if update_method == "POST":
